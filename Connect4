@@ -1,6 +1,4 @@
 /*
- Run in Netbeans (Internal Terminal)
- Can't run in terminal because of coloring.
  
  A simple Connect-Four game using a 2-dimensional array - [row][column]
  The player wins by connecting four of their spots in one of four directions
@@ -9,7 +7,7 @@
         / Diagonal
         \ Diagonal
  
- 
+ Run Using the terminal or whatever IDE you feel most comfortable with.
  Created by: Scott Ramer
  */
  
