@@ -1,0 +1,930 @@
+/*
+ Run in Netbeans (Internal Terminal)
+ Can't run in terminal because of coloring.
+ 
+ A simple Connect-Four game using a 2-dimensional array - [row][column]
+ The player wins by connecting four of their spots in one of four directions
+        - Horizontal
+        | Veritcal
+        / Diagonal
+        \ Diagonal
+ 
+ 
+ Created by: Scott Ramer
+ */
+ 
+#include <iostream>
+#include <limits>
+#include <cstdlib>
+#include <ctime>
+#include <stdio.h>
+#include <regex.h>
+//#define MAX_LINE 4096
+//#define RESET   "\033[0m"
+//#define BLACK   "\033[30m"      /* Black */
+//#define RED     "\033[31m"      /* Red */
+//#define GREEN "\033[32m"
+//#define YELLOW "\033[33m"
+//#define BLUE "\033[34m"
+//#define MAGENTA "\033[35m"
+//#define CYAN "\033[36m"
+//#define WHITE "\033[37m"
+//#define BLACK_BACK "\033[40m"
+//#define RED_BACK "\033[41m"
+//#define GREEN_BACK "\033[42m"
+//#define YELLOW_BACK "\033[43m"
+//#define BLUE_BACK "\033[44m"
+//#define MAGENTA_BACK "\033[45m"
+//#define CYAN_BACK "\033[46m"
+//#define WHITE_BACK "\033[47m"
+
+const int WIDTH = 7;
+const int DEPTH = 6;
+
+using namespace std;
+ 
+ 
+//The workings of Connect Four
+class connectFour{
+        int player;
+        int score[2];
+        int board[DEPTH][WIDTH];  //6 = Rows, 7 = Columns
+        int move;
+        bool win;
+       
+public:
+        //Set the player number to one and the scores to zero
+        connectFour(){
+                player = 1;
+                score[0] = 0;
+                score[1] = 0;
+                win = false;
+               
+                //Initialize board array
+                for (int i = 0; i < DEPTH; i++){
+                        for (int x = 0; x < WIDTH; x++){
+                                board[i][x] = 0;
+                        }
+                }
+        }
+       
+        //Setup the turn by first checking for a win
+        //If there is no win, continue by displaying the board
+        //and getting the player's move
+        void startTurn(){
+                checkWin();
+                if (win == true){
+                        clearScreen();
+                        display();
+                        cout<< "Player #" << player << " has won!" <<endl <<endl;
+                }
+                else{
+                        display();
+                        gatherMove();
+                }
+        }
+       
+        //Display the board
+        void display(){
+                clearScreen();
+                cout<< " 1  2  3  4  5  6  7 " <<endl;
+                for (int i = 0; i < 6; i++){
+                        for (int x = 0; x < WIDTH; x++){
+                          if(board[i][x] == 0)
+                            {
+                                cout << "|"<< " " << "|";
+                            }
+                            else if(board[i][x] == 1)
+                                cout<< "|" << "X" << "|";
+                            else if(board[i][x] == 2)
+                                cout<< "|" << "O" << "|";
+                        }
+
+                        cout<< endl;
+                }
+                
+        }
+       
+        //Gather the player's move
+        void gatherMove(){
+                int emptySpots = 0;
+                cout<< endl << "Player #" << player << ": Move to which space? ";
+                while((!(cin >> move)) || move == 0 || move >= 8 || move <=0){
+            
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cout << "Invalid input.  Try again: ";
+	}
+	cout << "You enterd: " << move << endl;
+               
+                //If the player enters anything above 7, set it to 7
+                if (move > 7){move = 7;}
+                
+                //If the player enters anything below 0, set it to 0
+                if (move < 0){move = 0;}
+               
+                //Determine where the player's piece falls
+                //If something occupies the lowest point already, put it above
+                for (int i = 5; i >= 0; i--){
+                        if (board[i][move - 1] == 0){
+                                //board[i][move - 1] = player;
+                                int test[DEPTH][WIDTH];
+                                memcpy(test, board, sizeof(test));
+                                int j = 0;
+                                
+                                while(j < i)
+                                {
+                                    test[j][move-1] = player;
+                                printScreen(test,move-1);
+                                test[j][move-1]= 0;                                
+                                usleep(500000);
+                                 
+                                j++;
+                                }
+                                //cout << emptySpots << endl;
+                                board[i][move - 1] = player;
+                                break;
+                        }
+                        else{
+                                emptySpots += 1;
+                        }
+                }
+               
+                //If there are no more rows in a column, tell the player to try again
+                if (emptySpots == 6){
+                        cout<< endl << "There are no empty spots on #" << move << "! Try again!";
+                        gatherMove();
+                }
+               
+                //Set the next player to move
+                if (player == 1){player = 2;}
+                else {player = 1;}
+               
+                //Call start of next turn
+                startTurn();
+        }
+        void printScreen(int test[DEPTH][WIDTH], int column) {
+        clearScreen();
+                cout<< " 1  2  3  4  5  6  7 " <<endl;
+                for (int i = 0; i < DEPTH; i++){
+                        for (int x = 0; x < WIDTH; x++){
+                           if(test[i][x] == 0)
+                            {
+                                cout << "|"<< " " << "|";
+                            }
+                           else if(test[i][x] == 1)
+                                cout<< "|" << "X" << "|";
+                           else if(test[i][x] == 2)
+                                cout<< "|" << "O" << "|";
+                           
+                        }
+
+                        cout<< endl;
+                }
+              
+        }
+       
+        //Check for any winning combinations
+        void checkWin(){
+                int start = 0;
+               
+                //Horizontal Win
+                for (int i = 0; i < DEPTH; i ++){
+                        for (start = 0; start <= 3; start++){
+                                if ((board[i][start] == board[i][start+1] && board[i][start+1] == board[i][start+2] && board[i][start+2] == board[i][start+3]) && (board[i][start] != 0)){
+                                        win = true;
+                                        player = board[i][start];
+                                        break;
+                                }
+                        }
+                }
+               
+                //Vertical Win
+                for (int i = 0; i < WIDTH; i ++){
+                        for (start = 0; start <= 2; start++){
+                                if ((board[start][i] == board[start+1][i] && board[start+1][i] == board[start+2][i] && board[start+2][i] == board[start+3][i]) && (board[start][i] != 0)){
+                                        win = true;
+                                        player = board[start][i];
+                                        break;
+                                }
+                        }
+                }
+               
+                //Diagonal Win - "/"
+                for (int i = 3; i < DEPTH; i ++){
+                        for (start = 0; start <= 3; start++){
+                                if ((board[i][start] == board[i-1][start+1] && board[i-1][start+1] == board[i-2][start+2] && board[i-2][start+2] == board[i-3][start+3]) && (board[i][start] != 0)){
+                                        win = true;
+                                        player = board[i][start];
+                                        break;
+                                }
+                        }
+                }
+               
+                //Diagonal Win - "\"
+                for (int i = 0; i < 3; i ++){
+                        for (start = 0; start <= 4; start++){
+                                if ((board[i][start] == board[i+1][start+1] && board[i+1][start+1] == board[i+2][start+2] && board[i+2][start+2] == board[i+3][start+3]) && (board[i][start] != 0)){
+                                        win = true;
+                                        player = board[i][start];
+                                        break;
+                                }
+                        }
+                }
+        }
+       
+        //Clear the screen
+        //Set for OSX currently - Change the inner system call for Windows or Linux
+        void clearScreen(){
+            #if defined(__CYGWIN__)
+                    printf("\e[1;1H\e[2J");
+            #elif defined(WINDOWS)
+                    system("cls");
+            #else
+                    system("clear");
+            #endif
+        }
+       
+};
+
+class Comp{
+        int player;
+        int score[2];
+        int board[DEPTH][WIDTH];  //6 = Rows, 7 = Columns
+        int move;
+        int lastMove;
+        int playerMove;
+        bool win;
+        bool columnFull;
+       
+public:
+        //Set the player number to one and the scores to zero
+        Comp(){
+                player = 1;
+                score[0] = 0;
+                score[1] = 0;
+                win = false;
+                
+                lastMove = 0;
+                playerMove = 0;
+                columnFull = false;
+                
+                //Initialize board array
+                for (int i = 0; i < 6; i++){
+                        for (int x = 0; x < WIDTH; x++){
+                                board[i][x] = 0;
+                        }
+                }
+        }
+       
+        //Setup the turn by first checking for a win
+        //If there is no win, continue by displaying the board
+        //and getting the player's move
+        void startTurn(){
+                checkWin();
+                if (win == true){
+                        clearScreen();
+                        display();
+                        if(player ==1)
+                        {
+                        cout<< "Player #" << player << " has won!" <<endl <<endl;
+                        }
+                        else
+                        {
+                        cout<< "The Computer has won! You must be bad!" <<endl <<endl;
+                        }
+                }
+                else{
+                        display();
+                        gatherMove();
+                }
+        }
+       
+        //Display the board
+        void display(){
+                clearScreen();
+                cout<< " 1  2  3  4  5  6  7 " <<endl;
+                for (int i = 0; i < DEPTH; i++){
+                        for (int x = 0; x < WIDTH; x++){
+                            if(board[i][x] == 0)
+                            {
+                                cout << "|"<< " " << "|";
+                            }
+                            else if(board[i][x] == 1)
+                                cout<< "|" << "X" << "|";
+                            else if(board[i][x] == 2)
+                                cout<< "|" << "O"<< "|";
+                        }
+                        
+                        cout<< endl;
+                }
+                
+        }
+       
+        //Gather the player's move
+        void gatherMove(){
+                int emptySpots = 0;
+          
+                if(player == 1){
+                cout<< endl << "Player #" << player << ": Move to which space? ";
+                while((!(cin >> move)) || move == 0 || move >= 8 || move <=0){
+            
+		cin.clear();
+		cin.ignore(numeric_limits<streamsize>::max(), '\n');
+		cout << "Invalid input.  Try again: ";
+                }
+                cout << "You enterd: " << move << endl;
+                playerMove = move;
+                
+                
+                }
+                else if(player ==2){
+                    cout << endl << "Computer's turn..." << endl;
+                    //sleep(2);
+                    move =computerMove();
+                    
+                }
+       
+                
+                //If the player enters anything above 7, set it to 7
+                if (move > WIDTH){move = 7;}
+                
+                //If the player enters anything below 0, set it to 0
+                if (move < 0){move = 0;}
+               
+                //Determine where the player's piece falls
+                //If something occupies the lowest point already, put it above
+                for (int i = 5; i >= 0; i--){
+                        if (board[i][move - 1] == 0){
+                                //board[i][move - 1] = player;
+                                int test[6][WIDTH];
+                                memcpy(test, board, sizeof(test));
+                                int j = 0;
+                                
+                                while(j < i)
+                                {
+                                    test[j][move-1] = player;
+                                printScreen(test,move-1);
+                                test[j][move-1]= 0;                                
+                                //usleep(500000);
+                                 
+                                j++;
+                                }
+                                //cout << emptySpots << endl;
+                                board[i][move - 1] = player;
+                                break;
+                        }
+                        else{
+                                emptySpots += 1;
+                        }
+                }
+               
+                //If there are no more rows in a column, tell the player to try again
+                if (emptySpots == 6){
+                        cout<< endl << "There are no empty spots on #" << move << "! Try again!";
+                        columnFull = true;
+                        gatherMove();
+                }
+               
+                //Set the next player to move
+                if (player == 1){player = 2;}
+                else {player = 1;}
+               
+                //Call start of next turn
+                startTurn();
+        }
+        void printScreen(int test[DEPTH][WIDTH], int column) {
+        clearScreen();
+                cout<< " 1  2  3  4  5  6  7 " <<endl;
+                for (int i = 0; i < DEPTH; i++){
+                        for (int x = 0; x < WIDTH; x++){
+                            if(test[i][x] == 0)
+                            {
+                                cout << "|"<< " " << "|";
+                            }
+                            else if(test[i][x] == 1)
+                                cout<< "|" << "X" << "|";
+                            else if(test[i][x] == 2)
+                                cout<< "|" << "O"<< "|";
+                           
+                        }
+                       
+                        cout<< endl;
+                }
+                
+        }
+        int computerMove()
+        {
+            int start = 0;
+              
+                //Horizontal Win
+                for (int i = 0; i < DEPTH; i ++){
+                        for (start = 0; start <= 3; start++){
+                                if(columnFull)
+                                {
+                                      int random_integer = 8;
+                                        while(random_integer > 7)
+                                        {
+                                            random_integer = (rand()%10 +1);
+                                            
+                                        }
+                                        int m = random_integer;
+                                        lastMove = m;
+                                        cout << "Playing in column ... " << m << endl;
+                                        columnFull = false;
+                                      //  sleep(2);
+                                        return m;  
+                                }
+                                else if ((board[i][start] == board[i][start+1] && board[i][start+1] == board[i][start+2]) && (board[i][start] != 0))
+                                {
+                                    if(board[i][start+3]==0)
+                                    {
+                                        //cout << "HERE1" << endl;
+                                        
+                                        if(i < 5)
+                                        {
+                                         if(board[i-1][start+3] != 0) 
+                                         {
+                                        
+                                                int m = start+4;
+                                                cout << "Playing in column ... "<< start << endl;
+                                       //         sleep(3);
+                                                return m;
+                                         }
+                                        }
+                                        else if(i == 5)
+                                        {
+                                            if(board[i][start+3]== 0)
+                                            {
+                                                int m = start+4;
+                                                cout << "Playing in column ... "<< start << endl;
+                                                sleep(3);
+                                                return m;
+                                            }
+                                        }
+         
+                                    }
+                                    else if(board[i][start-1]==0)
+                                    {
+                                         //cout << "HERE2" << endl;
+                                        
+                                        if(start >=0)
+                                        {
+                                            //cout << "After HERE " << endl;
+                                            //cout << "Start " << start << endl;
+                                            //cout << "I = " << i << endl;
+                                            if(i < 5)
+                                            {
+                                                //cout << "Double here" << endl;
+                                                if(board[i-1][start-1]!=0)
+                                                {
+                                                   // cout << "LESS THAN FIVE" << endl;
+                                                int m = start;
+                                                cout << "Playing in column ... "<< m << endl;
+                                 //               sleep(3);
+                                                return m;
+                                                }
+                                            }
+                                            else if(i == 5)
+                                            {
+                                               // cout << "???????" <<
+                                                //board[i][start-1] << endl;
+                                                if(board[i][start-1]==0)
+                                                {
+                                                    //cout << "EQUAL TO FIVE " << endl;
+                                                int m = start;
+                                                cout << "Playing in column ... "<< m << endl;
+                                //                sleep(3);
+                                                return m;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                }
+                                else if ((board[i][start] == board[i][start+1] && board[i][start+1] == board[i][start+3]) && (board[i][start] != 0) && (board[i][start+2] ==0))
+                                {
+                                    int m = start+3;
+                                        cout << "Playing in column ... "<< m << endl;
+                                //        sleep(3);
+                                        return m;
+                                }   
+                                else if ((board[i][start] == board[i][start+2] && board[i][start+2] == board[i][start+3]) && (board[i][start] != 0) && (board[i][start+1] ==0))
+                                {
+                                    int m = start+2;
+                                        cout << "Playing in column ... "<< m << endl;
+                                //        sleep(3);
+                                        return m;
+                                }     
+                       
+                        }
+                }
+               
+                //Vertical Win
+               
+                    
+                for (int i = 0; i < WIDTH; i ++)
+                {
+                        for (start = 5; start >= 4; start--)
+                        {
+                            //cout << board[start][i] <<  " " << board[start-1][i] << " " << board[start+2][i] << endl;
+                            if(columnFull)
+                                {
+                                      int random_integer = 8;
+                                        while(random_integer >WIDTH)
+                                        {
+                                            random_integer = (rand()%10 +1);
+                                            
+                                        }
+                                        int m = random_integer;
+                                        lastMove = m;
+                                        cout << "Playing in column ... " << m << endl;
+                                        columnFull = false;
+                                        //sleep(2);
+                                        return m;  
+                                }
+                            else if ((board[start][i] == board[start-1][i] && board[start-1][i] == board[start-2][i]) && (board[start][i] != 0)){
+                                    if(board[start-2][i]==0)
+                                    {
+                                    //cout << "HERE4" << endl;
+                                    i+=1;
+                                    cout << "Playing in column ... "<<i << endl;
+                                    //sleep(2);
+                                    return i;
+                                    }
+                                    else if((board[start-1][i] == board[start-2][i]))
+                                    {
+                                        i+=1;
+                                    cout << "Playing in column ... "<<i << endl;
+                                 //   sleep(2);
+                                    return i;
+                                        
+                                    }
+                                    
+                                   
+                                }
+                                else if ((board[start][i] == board[start-1][i]) && (board[start][i] != 0)){
+                                    if(board[start-2][i]==0)
+                                    {
+                                    //cout << "HERE4" << endl;
+                                    i+=1;
+                                    cout << "Playing in column ... "<<i << endl;
+                                   // sleep(2);
+                                    return i;
+                                    }
+                                    else if((board[start-1][i] == board[start-2][i]))
+                                    {
+                                        i+=1;
+                                    cout << "Playing in column ... "<<i << endl;
+                                   // sleep(2);
+                                    return i;
+                                        
+                                    }
+                                    
+                                   
+                                }
+                        }
+                }               
+               
+                //Diagonal Win - "/"
+                for (int i = 3; i < DEPTH; i ++){
+                        for (start = 0; start <= 3; start++)
+                        {
+                                if ((board[i][start] == board[i-1][start+1] && board[i-1][start+1] == board[i-2][start+2] ) && (board[i][start] != 0))
+                                {
+                                  if(board[i-2][start+3] == 0)
+                                    {
+                                        int m = start+3;
+                                        //cout << "HERE5" << endl;
+                                      //  sleep(3);
+                                cout << "Playing in column ... "<<m << endl;
+                                        return m;
+                                    }
+                                  else
+                                  {
+                                      //cout << "HERE6" << endl;
+                                       // sleep(3);
+                                      start +=4;
+                                      cout << "Playing in column ... "<<start << endl;
+                                    return start;
+                                  }
+                                }
+                                
+                        }
+                }
+               
+                //Diagonal Win - "\"
+                for (int i = 0; i < 3; i ++)
+                {
+                        for (start = 0; start <= 4; start++)
+                        {
+                                if ((board[i][start] == board[i+1][start+1] && board[i+1][start+1] == board[i+2][start+2]) && (board[i][start] != 0))
+                                {
+                                    if(board[i+2][start+3] == 0)
+                                    {
+                                    
+                                        if(board[i+3][start+3] != 0)
+                                        {
+                                            start +=3;
+                                            //cout << "HERE8" << endl;
+                                            cout << "Playing in column ... "<< start << endl;
+                                         //   sleep(2);
+                                            columnFull = false;
+                                            return start;
+                                        }
+                                        
+                                    }
+                                       
+                                }
+                                else{
+                                    //cout << "HERE10" << endl;
+                                    if(playerMove >= 1 && playerMove <=4)
+                                    {
+                                        int m = playerMove+1;
+                                        cout << "Playing in column ... "<<playerMove+1 << endl;
+                                       //sleep(2);
+                                        columnFull = false;
+                                        return m;
+                                    }
+                                    else if(playerMove <=7 && playerMove >4)
+                                    {
+                                        int m = playerMove-1;
+                                        cout << "Playing in column ... "<<playerMove-1 << endl;
+                                        //sleep(2);
+                                        columnFull = false;
+                                        return m;
+                                    }
+//                                    if(lastMove == 0){
+//                                    int random_integer = 8;
+//                                    while(random_integer>7){
+//                                     random_integer = (rand()%10)+1;
+//                                    }
+//                                    int m =random_integer;
+//                                    lastMove = m;
+//                                    cout << "Playing in column ... "<< m << endl;
+//                                    
+//                                        sleep(2);
+//                                        return m;
+//                                    }
+                                    else if(!columnFull)
+                                    {
+                                        cout << "Playing in column ... "<<lastMove << endl;
+                                        //sleep(2);
+                                        columnFull = false;
+                                        return lastMove;
+                                    }
+                                    else
+                                    {
+                                        int random_integer = 8;
+                                        while(random_integer >7)
+                                        {
+                                            random_integer = (rand()%10 +1);
+                                            
+                                        }
+                                        int m = random_integer;
+                                        lastMove = m;
+                                        cout << "Playing in column ... " << m << endl;
+                                        columnFull = false;
+                                        //sleep(2);
+                                        return m; 
+                                    }
+                                    
+                                    
+                                }
+                        }
+                }
+        }
+        //Check for any winning combinations
+        void checkWin(){
+                int start = 0;
+               
+                //Horizontal Win
+                for (int i = 0; i < 6; i ++){
+                        for (start = 0; start <= 3; start++){
+                                if ((board[i][start] == board[i][start+1] && board[i][start+1] == board[i][start+2] && board[i][start+2] == board[i][start+3]) && (board[i][start] != 0)){
+                                        win = true;
+                                        player = board[i][start];
+                                        break;
+                                }
+                        }
+                }
+               
+                //Vertical Win
+                for (int i = 0; i < WIDTH; i ++){
+                        for (start = 0; start <= 2; start++){
+                                if ((board[start][i] == board[start+1][i] && board[start+1][i] == board[start+2][i] && board[start+2][i] == board[start+3][i]) && (board[start][i] != 0)){
+                                        win = true;
+                                        player = board[start][i];
+                                        break;
+                                }
+                        }
+                }
+               
+                //Diagonal Win - "/"
+                for (int i = 3; i < DEPTH; i ++){
+                        for (start = 0; start <= 3; start++){
+                                if ((board[i][start] == board[i-1][start+1] && board[i-1][start+1] == board[i-2][start+2] && board[i-2][start+2] == board[i-3][start+3]) && (board[i][start] != 0)){
+                                        win = true;
+                                        player = board[i][start];
+                                        break;
+                                }
+                        }
+                }
+               
+                //Diagonal Win - "\"
+                for (int i = 0; i < 3; i ++){
+                        for (start = 0; start <= 4; start++){
+                                if ((board[i][start] == board[i+1][start+1] && board[i+1][start+1] == board[i+2][start+2] && board[i+2][start+2] == board[i+3][start+3]) && (board[i][start] != 0)){
+                                        win = true;
+                                        player = board[i][start];
+                                        break;
+                                }
+                        }
+                }
+        }
+       
+        //Clear the screen
+        //Set for OSX currently - Change the inner system call for Windows or Linux
+        void clearScreen(){
+            #if defined(__CYGWIN__)
+                    printf("\e[1;1H\e[2J");
+            #elif defined(WINDOWS)
+                    system("cls");
+            #else
+                    system("clear");
+            #endif
+        }
+        
+        
+//int evaluateBoard(int player, int &bestMove) {
+//    int counter1,counter2;
+//    for (int ind=0; ind<WIDTH; ind++)
+//    {
+//        if(addToColumn(ind, player))
+//        {
+//     
+//        counter1=0;
+//        counter2=0;
+//        bool flag=true;
+//         
+//        for (int i = 0; i < DEPTH; i++)
+//      {
+//            if (arrBoard[i][ind]==player)
+//            {
+//                counter1++;
+//                flag=true;
+//            }
+//            else
+//            {
+//                if (player==1)
+//                {
+//                    if (arrBoard[i][ind]==2)
+//                    {
+//                        counter1=0;
+//                    }
+//                }
+//                if (player==2)
+//                
+//                    if (arrBoard[i][ind]==1)
+//                    {
+//                        counter1=0;
+//                    }
+//                }
+//             }
+//             
+//             
+//            for (int j = 0; j < WIDTH; j++)
+//
+//            {
+//                if (arrBoard[i][j]==player)
+//                {
+//                    counter2++
+//                }
+//                else
+//                {
+//                    if (player==1)
+//                    {
+//                        if (arrBoard[i][j]==2)
+//                        {
+//                            counter2=0;
+//                        }
+//                    }
+//                    if (player==2)
+//                    {
+//                        if (arrBoard[i][j]==1)
+//                        {
+//                            counter2=0;
+//                        }
+//                    }
+//                }
+//
+//            }
+//
+//       
+//}
+//    }
+//            cout<<"vert:"<<counter1<<endl;
+//            cout<<"hor:"<<counter2<<endl;
+//         
+//         
+//            int counter=((counter1-counter2)>0)?counter1:counter2;
+//             
+//            int sign=1;
+//            if (player==2)
+//            {
+//                 sign=-1;
+//            }
+//           
+//            removeFromColumn(ind, player);         
+//                switch (counter)
+//            {
+//                    case 2:                        
+//                        bestMove=ind;
+//                        return 2*sign;
+//                        break;
+//                    case 3:
+//                        bestMove=ind;
+//                        return 3*sign;
+//                        break;                         
+//                    default:
+//                        break;             
+//            }
+//    }  
+};
+ 
+
+int main () {
+    int choice;
+   
+  
+srand((unsigned)time(NULL));    
+do
+{
+    cout << "-----------CONNECT FOUR-----------";
+    cout << endl
+    << endl
+<< " 1 - Start 1 vs. 1 Connect Four.\n"
+<< " 2 - Start 1 vs. comp Connect Four.\n"
+<< " 3 - Help.\n"
+<< " 4 - About.\n"
+<< " 5 - Exit.\n\n"
+<< " Enter your choice and press enter: ";
+cin >> choice;
+
+switch (choice)
+{
+case 1:
+{
+//code to start the game
+    cout << "1 vs. 1" << endl;
+    cout << "Are you both ready?!" << endl;
+    sleep(2);
+    connectFour play;
+    play.startTurn();
+}
+break;
+case 2:
+{
+//code to make score for this game to count how many times u win the game
+    cout << "1 vs. comp" << endl;
+    Comp cplay;
+    cplay.startTurn();
+}
+break;
+case 3:
+{
+//code to make option for the game
+    cout << "How to play" << endl;
+    cout << "Step 1: Decide who will go first.\n";
+    cout << "Step 2: Players alternate turns choosing a column to drop their piece in a column.\n";
+    cout << "Step 3: The first player to get four in a row, horizontally, vertically or diagonally wins.\n";
+    cout << "Step 4: If each player can't get four in a row the game ends in a draw.\n";
+    cout << endl;
+}
+break;
+case 4:
+{
+    cout << endl;
+   cout << "This connect-four program was created \n";
+          
+   cout << endl;
+}
+    
+case 5:
+{
+
+    cout << "Exit" << endl;
+}
+break;
+default:
+cout << "Not a Valid Choice. \n"
+<< "Choose again.\n";
+cout << endl;
+break;
+}
+
+}while (choice !=5);
+
+
+    return 0;
+}
